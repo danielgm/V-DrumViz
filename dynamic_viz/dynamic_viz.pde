@@ -43,42 +43,66 @@ void draw() {
   long now = (new Date()).getTime();
   float initial = 50, factor = 0.0001;
   
-  int cx, cy;
   long noteAge, t;
+  
+  // Remove old notes.
+  while (data.getRowCount() > 0 && data.getRow(0).getLong("timestamp") - start + 3000 < now - start) {
+    data.removeRow(0);
+  } 
+    
   for (int i = 0; i < data.getRowCount(); i++) {
     TableRow r = data.getRow(i);
     
-    // Don't draw anything too old.
-    if (r.getLong("timestamp") - start + 3000 < now - start) continue;
+    // Only draw noteOn events.
+    if (!r.getString("event").equals("noteOn")) continue;
     
     // Don't draw anything that hasn't happened yet.
     if (r.getLong("timestamp") - start > now - start) break;
     
     noteAge = now - start - (r.getLong("timestamp") - start);
+    println(noteAge);
     t = noteAge * noteAge;
     
+    noStroke();
+    fill(r.getString("event").equals("noteOn") ? map(noteAge, 0, 3000, 255, 0) : 0);
+    
     switch (r.getInt("pitch")) {
+      case KICK:
+        line(width/2 + factor * t, -height/2, width/2 + factor * t, height/2);
+        line(width/2 + -factor * t, -height/2, width/2 + -factor * t, height/2);
+        break;
+        
       case SNARE:
-        cx = 420;
-        cy = 320;
+        line(width/2 + noteAge * 0.001, 0, width/2 + noteAge * 0.001, height);
+        line(width/2 - noteAge * 0.001, 0, width/2 - noteAge * 0.001, height);
         break;
       
       case HIHAT:
-        cx = 400;
-        cy = 300;
+        ellipse(400, 300, initial + factor * t, initial + factor * t);
         break;
       
       case RIDE:
-        cx = 800;
-        cy = 280;
+        ellipse(800, 280, initial + factor * t, initial + factor * t);
         break;
       
       default:
         continue;
     }
-    
-    fill(r.getString("event").equals("noteOn") ? map(noteAge, 0, 3000, 255, 0) : 0);
-    ellipse(cx, cy, initial + factor * t, initial + factor * t);
+  }
+}
+
+void keyPressed() {
+  switch (key) {
+    case 'h':
+      noteOn(9, HIHAT, floor(random(10, 150)));
+      break;
+    case 's':
+      noteOn(9, SNARE, floor(random(10, 150)));
+      break;
+    case 'k':
+      noteOn(0, KICK, floor(random(10, 150)));
+      break;
+    default:
   }
 }
 
